@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Japan Universities, Earthquakes, and Tower Apartments Map</title>
+    <meta name="description" content="Map showing locations of Japanese universities, earthquake incidents, and tower apartments">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+            integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Japan Universities, Earthquakes, and Tower Apartments Map</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="bar_charts.html">Bar Charts</a></li>
+            <li><a href="scatter_plots.html">Scatter Plots</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <div id="map" class="map"></div>
+    </div>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([36.2048, 138.2529], 5);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Function to create a custom cluster icon
+        function createClusterIcon(cluster, color) {
+            var childCount = cluster.getChildCount();
+            var c = ' marker-cluster-';
+            if (childCount < 10) {
+                c += 'small';
+            } else if (childCount < 100) {
+                c += 'medium';
+            } else {
+                c += 'large';
+            }
+            return new L.DivIcon({
+                html: '<div style="background-color:' + color + '"><span>' + childCount + '</span></div>',
+                className: 'marker-cluster' + c,
+                iconSize: new L.Point(40, 40)
+            });
+        }
+
+        // Create marker cluster groups for universities, earthquakes, and tower apartments with different colors
+        var universityMarkers = L.markerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return createClusterIcon(cluster, 'rgba(75, 192, 192, 0.6)'); // Light blue
+            }
+        });
+        var earthquakeMarkers = L.markerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return createClusterIcon(cluster, 'rgba(255, 99, 132, 0.6)'); // Light red
+            }
+        });
+        var apartmentMarkers = L.markerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                return createClusterIcon(cluster, 'rgba(153, 102, 255, 0.6)'); // Light purple
+            }
+        });
+
+        // Custom icon for universities
+        var universityIcon = L.icon({
+            iconUrl: 'university.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        });
+
+        // Custom icon for earthquakes
+        var earthquakeIcon = L.icon({
+            iconUrl: 'earthquake.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        });
+
+        // Custom icon for tower apartments
+        var apartmentIcon = L.icon({
+            iconUrl: 'apartment.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        });
+
+        // Function to process and display CSV data for universities
+        function processUniversityData(data) {
+            data.forEach(university => {
+                let lat = parseFloat(university.latitude);
+                let long = parseFloat(university.longitude);
+                let name = university.name;
+                let address = university.address;
+
+                if (!isNaN(lat) && !isNaN(long)) {
+                    let marker = L.marker([lat, long], {icon: universityIcon});
+                    marker.bindPopup(`<b>${name}</b><br>${address}`);
+                    universityMarkers.addLayer(marker);
+                } else {
+                    console.error(`Invalid coordinates for university: ${name}, Latitude: ${university.latitude}, Longitude: ${university.longitude}`);
+                }
+            });
+            map.addLayer(universityMarkers);
+        }
+
+        // Function to process and display CSV data for earthquakes
+        function processEarthquakeData(data) {
+            data.forEach(earthquake => {
+                let lat = parseFloat(earthquake.latitude);
+                let long = parseFloat(earthquake.longitude);
+                let magnitude = parseFloat(earthquake.mag);
+                let depth = parseFloat(earthquake.depth);
+                let date = earthquake.time;
+
+                if (!isNaN(lat) && !isNaN(long)) {
+                    let marker = L.marker([lat, long], {icon: earthquakeIcon});
+                    marker.bindPopup(`<b>Magnitude: ${magnitude}</b><br>Date: ${date}<br>Depth: ${depth} km`);
+                    earthquakeMarkers.addLayer(marker);
+                } else {
+                    console.error(`Invalid coordinates for earthquake, Latitude: ${earthquake.latitude}, Longitude: ${earthquake.longitude}`);
+                }
+            });
+            map.addLayer(earthquakeMarkers);
+        }
+
+        // Function to process and display CSV data for tower apartments
+        function processApartmentData(data) {
+            data.forEach(apartment => {
+                let lat = parseFloat(apartment.Latitude);
+                let long = parseFloat(apartment.Longitude);
+                let name = apartment.Name;
+                let floors = apartment['Number floors'];
+
+                if (!isNaN(lat) && !isNaN(long)) {
+                    let marker = L.marker([lat, long], {icon: apartmentIcon});
+                    marker.bindPopup(`<b>${name}</b><br>Floors: ${floors}`);
+                    apartmentMarkers.addLayer(marker);
+                } else {
+                    console.error(`Invalid coordinates for apartment: ${name}, Latitude: ${apartment.Latitude}, Longitude: ${apartment.Longitude}`);
+                }
+            });
+            map.addLayer(apartmentMarkers);
+        }
+
+        // Fetch and parse the universities CSV file
+        fetch("japanese_universities.csv")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                let result = Papa.parse(csvText, { header: true });
+                processUniversityData(result.data);
+            })
+            .catch(error => {
+                console.error("Error loading or parsing university CSV file", error);
+            });
+
+        // Fetch and parse the earthquakes CSV file
+        fetch("Japan earthquakes 2001 - 2018.csv")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                let result = Papa.parse(csvText, { header: true });
+                processEarthquakeData(result.data);
+            })
+            .catch(error => {
+                console.error("Error loading or parsing earthquake CSV file", error);
+            });
+
+        // Fetch and parse the tower apartments CSV file
+        fetch("japan_tower_apartment.csv")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                
+                let result = Papa.parse(csvText, { header: true });
+                processApartmentData(result.data);
+            })
+            .catch(error => {
+                console.error("Error loading or parsing apartment CSV file", error);
+            });
+
+        // Layer controls
+        var overlayMaps = {
+            "Universities": universityMarkers,
+            "Earthquakes": earthquakeMarkers,
+            "Tower Apartments": apartmentMarkers
+        };
+
+        L.control.layers(null, overlayMaps).addTo(map);
+
+    </script>
+</body>
+</html>

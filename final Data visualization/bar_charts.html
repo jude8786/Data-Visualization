@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Japan Data Bar Charts</title>
+    <meta name="description" content="Bar charts for Japanese universities, earthquakes, and tower apartments">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+            integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        canvas {
+            max-width: 800px;
+            max-height: 400px;
+        }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        nav ul li {
+            display: inline;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Japan Data Bar Charts</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="scatter_plots.html">Scatter Plots</a></li>
+            <li><a href="map.html">Map</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <canvas id="universityBarChart" width="800" height="400"></canvas>
+        <canvas id="earthquakeBarChart" width="800" height="400"></canvas>
+        <canvas id="apartmentBarChart" width="800" height="400"></canvas>
+        <canvas id="universityEarthquakeComparison" width="800" height="400"></canvas>
+        <canvas id="universityApartmentComparison" width="800" height="400"></canvas>
+        <canvas id="earthquakeApartmentComparison" width="800" height="400"></canvas>
+    </div>
+    <script>
+        // Fetch the JSON file with region data
+        fetch('japan_regions.json')
+            .then(response => response.json())
+            .then(regions => {
+                // Function to categorize by regions using latitude and longitude
+                function categorizeRegion(latitude, longitude) {
+                    for (let region in regions) {
+                        if (latitude >= regions[region].lat[0] && latitude <= regions[region].lat[1] &&
+                            longitude >= regions[region].lon[0] && longitude <= regions[region].lon[1]) {
+                            return region;
+                        }
+                    }
+                    return null;
+                }
+
+                // Function to remove "Ken" suffix from regions
+                function cleanRegionName(region) {
+                    if (region && region.endsWith(' Ken')) {
+                        return region.replace(' Ken', '');
+                    }
+                    return region;
+                }
+
+                // Fetch and parse the CSV files
+                Promise.all([
+                    fetch('japanese_universities.csv').then(response => response.text()),
+                    fetch('Japan earthquakes 2001 - 2018.csv').then(response => response.text()),
+                    fetch('japan_tower_apartment.csv').then(response => response.text())
+                ]).then(([universitiesText, earthquakesText, apartmentsText]) => {
+                    // Universities Data
+                    let universities = Papa.parse(universitiesText, { header: true }).data;
+                    let universityRegionCounts = {};
+
+                    universities.forEach(university => {
+                        let state = cleanRegionName(university.state);
+                        if (state) {
+                            if (!universityRegionCounts[state]) {
+                                universityRegionCounts[state] = 0;
+                            }
+                            universityRegionCounts[state]++;
+                        }
+                    });
+
+                    let universityRegions = Object.keys(universityRegionCounts);
+                    let universityCounts = Object.values(universityRegionCounts);
+
+                    // Create University Bar Chart
+                    new Chart(document.getElementById('universityBarChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: universityRegions,
+                            datasets: [{
+                                label: 'Number of Universities',
+                                data: universityCounts,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+
+                    // Earthquakes Data
+                    let earthquakes = Papa.parse(earthquakesText, { header: true }).data;
+                    let earthquakeRegionCounts = {};
+
+                    earthquakes.forEach(earthquake => {
+                        let region = categorizeRegion(parseFloat(earthquake.latitude), parseFloat(earthquake.longitude));
+                        if (region) {
+                            if (!earthquakeRegionCounts[region]) {
+                                earthquakeRegionCounts[region] = 0;
+                            }
+                            earthquakeRegionCounts[region]++;
+                        }
+                    });
+
+                    let earthquakeRegions = Object.keys(earthquakeRegionCounts);
+                    let earthquakeCounts = Object.values(earthquakeRegionCounts);
+
+                    // Create Earthquake Bar Chart
+                    new Chart(document.getElementById('earthquakeBarChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: earthquakeRegions,
+                            datasets: [{
+                                label: 'Number of Earthquakes',
+                                data: earthquakeCounts,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+
+                    // Apartments Data
+                    let apartments = Papa.parse(apartmentsText, { header: true }).data;
+                    let apartmentRegionCounts = {};
+
+                    apartments.forEach(apartment => {
+                        let region = categorizeRegion(parseFloat(apartment.Latitude), parseFloat(apartment.Longitude));
+                        if (region) {
+                            if (!apartmentRegionCounts[region]) {
+                                apartmentRegionCounts[region] = 0;
+                            }
+                            apartmentRegionCounts[region]++;
+                        }
+                    });
+
+                    let apartmentRegions = Object.keys(apartmentRegionCounts);
+                    let apartmentCounts = Object.values(apartmentRegionCounts);
+
+                    // Create Apartment Bar Chart
+                    new Chart(document.getElementById('apartmentBarChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: apartmentRegions,
+                            datasets: [{
+                                label: 'Number of Tower Apartments',
+                                data: apartmentCounts,
+                                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                borderColor: 'rgba(153, 102, 255, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+
+                    // University and Earthquake Comparison
+                    let universityEarthquakeRegions = Array.from(new Set([...universityRegions, ...earthquakeRegions]));
+                    let universityEarthquakeUniversityCounts = universityEarthquakeRegions.map(region => universityRegionCounts[region] || 0);
+                    let universityEarthquakeEarthquakeCounts = universityEarthquakeRegions.map(region => earthquakeRegionCounts[region] || 0);
+
+                    new Chart(document.getElementById('universityEarthquakeComparison'), {
+                        type: 'bar',
+                        data: {
+                            labels: universityEarthquakeRegions,
+                            datasets: [
+                                {
+                                    label: 'Universities',
+                                    data: universityEarthquakeUniversityCounts,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Earthquakes',
+                                    data: universityEarthquakeEarthquakeCounts,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+
+                    // University and Apartment Comparison
+                    let universityApartmentRegions = Array.from(new Set([...universityRegions, ...apartmentRegions]));
+                    let universityApartmentUniversityCounts = universityApartmentRegions.map(region => universityRegionCounts[region] || 0);
+                    let universityApartmentApartmentCounts = universityApartmentRegions.map(region => apartmentRegionCounts[region] || 0);
+
+                    new Chart(document.getElementById('universityApartmentComparison'), {
+                        type: 'bar',
+                        data: {
+                            labels: universityApartmentRegions,
+                            datasets: [
+                                {
+                                    label: 'Universities',
+                                    data: universityApartmentUniversityCounts,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Tower Apartments',
+                                    data: universityApartmentApartmentCounts,
+                                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                    borderColor: 'rgba(153, 102, 255, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+
+                    // Earthquake and Apartment Comparison
+                    let earthquakeApartmentRegions = Array.from(new Set([...earthquakeRegions, ...apartmentRegions]));
+                    let earthquakeApartmentEarthquakeCounts = earthquakeApartmentRegions.map(region => earthquakeRegionCounts[region] || 0);
+                    let earthquakeApartmentApartmentCounts = earthquakeApartmentRegions.map(region => apartmentRegionCounts[region] || 0);
+
+                    new Chart(document.getElementById('earthquakeApartmentComparison'), {
+                        type: 'bar',
+                        data: {
+                            labels: earthquakeApartmentRegions,
+                            datasets: [
+                                {
+                                    label: 'Earthquakes',
+                                    data: earthquakeApartmentEarthquakeCounts,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Tower Apartments',
+                                    data: earthquakeApartmentApartmentCounts,
+                                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                    borderColor: 'rgba(153, 102, 255, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barPercentage: 0.5,
+                                    categoryPercentage: 0.5
+                                }
+                            }
+                        }
+                    });
+                }).catch(error => {
+                    console.error("Error loading or parsing CSV files", error);
+                });
+            }).catch(error => {
+                console.error("Error loading JSON file", error);
+            });
+    </script>
+</body>
+</html>
+

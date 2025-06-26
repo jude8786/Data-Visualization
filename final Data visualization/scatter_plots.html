@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Japan Data Scatter Plots and Correlations</title>
+    <meta name="description" content="Scatter plots and correlation analysis for Japanese universities, earthquakes, and tower apartments">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+            integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.0.6"></script> 
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        canvas {
+            max-width: 800px;
+            max-height: 400px;
+        }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        nav ul li {
+            display: inline;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Japan Data Scatter Plots and Correlations</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="bar_charts.html">Bar Charts</a></li>
+            <li><a href="map.html">Map</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <canvas id="universityVsEarthquakeScatterPlot" width="800" height="400"></canvas>
+        <canvas id="universityVsApartmentScatterPlot" width="800" height="400"></canvas>
+        <canvas id="earthquakeVsApartmentScatterPlot" width="800" height="400"></canvas>
+        <div id="correlationResults"></div>
+    </div>
+    <script>
+        // Function to log data
+        function logData(data, label) {
+            console.log(`${label} Data:`, data);
+        }
+
+        // Fetch and parse the CSV files
+        Promise.all([
+            fetch('japanese_universities.csv').then(response => response.text()),
+            fetch('Japan earthquakes 2001 - 2018.csv').then(response => response.text()),
+            fetch('japan_tower_apartment.csv').then(response => response.text())
+        ]).then(([universitiesText, earthquakesText, apartmentsText]) => {
+            // Universities Data
+            let universities = Papa.parse(universitiesText, { header: true }).data;
+            logData(universities, 'Universities');
+            let universityScatterData = universities.map(university => ({
+                x: parseFloat(university.longitude),
+                y: parseFloat(university.latitude),
+                label: university.name
+            }));
+
+            // Earthquakes Data
+            let earthquakes = Papa.parse(earthquakesText, { header: true }).data;
+            logData(earthquakes, 'Earthquakes');
+            let earthquakeScatterData = earthquakes.map(earthquake => ({
+                x: parseFloat(earthquake.longitude),
+                y: parseFloat(earthquake.latitude),
+                label: `Magnitude: ${earthquake.mag}, Depth: ${earthquake.depth}km`
+            }));
+
+            // Apartments Data
+            let apartments = Papa.parse(apartmentsText, { header: true }).data;
+            logData(apartments, 'Apartments');
+            let apartmentScatterData = apartments.map(apartment => ({
+                x: parseFloat(apartment.Longitude),
+                y: parseFloat(apartment.Latitude),
+                label: apartment.Name
+            }));
+
+
+            // Function to create scatter plot with trend line
+            function createScatterPlotWithTrendLine(ctx, datasets, title) {
+                const scatterChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.raw.label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Longitude'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Latitude'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                datasets.forEach(dataset => {
+                    const regressionData = dataset.data.map(point => ({ x: point.x, y: point.y }))
+                                                      .filter(point => !isNaN(point.x) && !isNaN(point.y));
+                    if (regressionData.length > 1) {
+                        const regression = ss.linearRegression(regressionData.map(d => [d.x, d.y]));
+                        const regressionLine = ss.linearRegressionLine(regression);
+
+                        const lineData = regressionData.map(point => ({
+                            x: point.x,
+                            y: regressionLine(point.x)
+                        }));
+
+                        scatterChart.data.datasets.push({
+                            label: `${dataset.label} Trend Line`,
+                            data: lineData,
+                            type: 'line',
+                            fill: false,
+                            backgroundColor: dataset.backgroundColor.replace('0.6', '0.2'),
+                            borderColor: dataset.borderColor,
+                            borderWidth: 2,
+                            pointRadius: 0
+                        });
+
+                        scatterChart.update();
+                    }
+                });
+            }
+
+            // Create University vs Earthquake Scatter Plot
+            createScatterPlotWithTrendLine(
+                document.getElementById('universityVsEarthquakeScatterPlot'),
+                [
+                    {
+                        label: 'Universities',
+                        data: universityScatterData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Earthquakes',
+                        data: earthquakeScatterData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ],
+                'University vs Earthquake'
+            );
+
+            // Create University vs Apartment Scatter Plot
+            createScatterPlotWithTrendLine(
+                document.getElementById('universityVsApartmentScatterPlot'),
+                [
+                    {
+                        label: 'Universities',
+                        data: universityScatterData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Tower Apartments',
+                        data: apartmentScatterData,
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ],
+                'University vs Apartment'
+            );
+
+            // Create Earthquake vs Apartment Scatter Plot
+            createScatterPlotWithTrendLine(
+                document.getElementById('earthquakeVsApartmentScatterPlot'),
+                [
+                    {
+                        label: 'Earthquakes',
+                        data: earthquakeScatterData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Tower Apartments',
+                        data: apartmentScatterData,
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ],
+                'Earthquake vs Apartment'
+            );
+
+        }).catch(error => {
+            console.error("Error loading or parsing CSV files", error);
+        });
+    </script>
+</body>
+</html>
+

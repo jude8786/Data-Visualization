@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Japan Data Visualization</title>
+    <meta name="description" content="Navigation page for Japan Data Visualization">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: url('Fuji.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            color: white;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 3em;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        nav {
+            margin: 20px 0;
+        }
+        .nav-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav-buttons a {
+            text-decoration: none;
+            width: 250px;
+        }
+        .button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #eb93d4;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button:hover {
+            background-color: #ffb6b9;
+            transform: translateY(-2px);
+        }
+        .content {
+            margin: 20px;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .gif-container {
+            margin-top: 20px;
+        }
+        .gif-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1>Japan Data Visualization</h1>
+    <nav>
+        <div class="nav-buttons">
+            <a href="bar_charts.html"><button class="button">Bar Charts</button></a>
+            <a href="scatter_plots.html"><button class="button">Scatter Plots</button></a>
+            <a href="map.html"><button class="button">Map</button></a>
+        </div>
+    </nav>
+    <div class="gif-container">
+        <img src="luffy.gif" alt="Data Visualization Gif">
+    </div>
+    <div class="content">
+        <p>
+    </div>
+</body>
+</html>
